@@ -51,6 +51,28 @@ app.get('/facilities/:id', async(req, res) => {
   res.send(result);
 });
 
+//facilities =====update====
+app.patch('/facilities/:id', async (req, res) => {
+  const {id} = req.params;
+ const { _id, ...updatedData } = req.body; //id te bad deuya holo
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+      $set: updatedData, // ekhon direct sob updated field gulo chole jabe
+    };
+  const result = await facilitiesCollection.updateOne(filter, updateDoc);
+    res.send(result);  
+})
+
+//my facilities 
+app.get('/my-facilities/:email', async(req, res) => {
+  const {email} = req.params
+   const result = await facilitiesCollection.find({ creatorEmail: email }).toArray();
+  res.send(result);
+});
+
+
+
+
 //booking create
 app.post('/facilities/booking', async(req, res) => {
   const bookingData = req.body;
