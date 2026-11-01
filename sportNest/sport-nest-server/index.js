@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import "dotenv/config";
 
 
@@ -32,9 +32,18 @@ app.get('/facilities', async(req, res) => {
   res.send(result);
 });
 
+//create facility
 app.post('/facilities', async(req, res) => {
   const facilityData = req.body;
+  console.log(facilityData)
   const result = await facilitiesCollection.insertOne(facilityData)
+  res.send(result);
+});
+
+//facility deatils (single facility)
+app.get('/facilities/:id', async(req, res) => {
+  const {id} = req.params
+   const result = await facilitiesCollection.findOne({ _id: new ObjectId(id) })
   res.send(result);
 });
 
