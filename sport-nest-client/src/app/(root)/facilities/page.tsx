@@ -3,11 +3,13 @@ import FacilityCard from "@/components/FacilityCard";
 import { Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 
 export default async function FacilitiesPage() {
+
   // Backend data fetch
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/facilities`, {
     cache: "no-store"  
   });
   const allFacilitiesData = await res.json();
+  
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
