@@ -115,7 +115,7 @@ export default function Navbar() {
                   className="rounded-xl cursor-pointer flex items-center gap-2.5 py-2 text-gray-700 focus:bg-gray-100"
                 >
                   <Settings className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-medium">Manage Facilities</span>
+                  <span className="text-sm font-medium">My Facilities</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator className="my-1 bg-gray-100" />

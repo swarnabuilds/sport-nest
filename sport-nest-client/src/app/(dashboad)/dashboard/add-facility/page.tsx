@@ -5,8 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { useSession } from "@/lib/auth-client";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function AddFacilityPage() {
+
+    const { data: session, isPending} = useSession();
+    if(isPending) return <div className="flex justify-center items-center h-[85vh]">
+      <Spinner />
+    </div>
+    const user = session?.user
+    console.log(user)
+
+
+  
 
   const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,6 +30,13 @@ export default function AddFacilityPage() {
     // 2. Data Extract (Object-এ রূপান্তর)
     const facilityData = Object.fromEntries(formData.entries());
 
+    const finalData = {
+      ...facilityData,
+      price: Number(facilityData.price),
+      capacity: Number(facilityData.capacity),
+      creatorEmail: session?.user?.email,  
+    };
+
 
     //api call
     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/facilities`,{
@@ -25,7 +44,7 @@ export default function AddFacilityPage() {
       headers:{
         'Content-Type': "application/json"
       },
-      body:JSON.stringify(facilityData)
+      body:JSON.stringify(finalData)
     })
     const data = await res.json();
 
