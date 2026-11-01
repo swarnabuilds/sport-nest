@@ -25,6 +25,10 @@ const connectClient = await connectToMongoDB()
 //database create
 const db = connectClient.db('sport-nest');
 const facilitiesCollection = db.collection("facilities");
+const facilitiesBookingsCollection = db.collection("facilitiyBookings");
+
+
+
 
 //facilities
 app.get('/facilities', async(req, res) => {
@@ -47,6 +51,13 @@ app.get('/facilities/:id', async(req, res) => {
   res.send(result);
 });
 
+//booking create
+app.post('/facilities/booking', async(req, res) => {
+  const bookingData = req.body;
+  console.log(bookingData)
+  const result = await facilitiesBookingsCollection.insertOne(bookingData)
+  res.send(result);
+});
 
 
 app.get('/', (req, res) => {
