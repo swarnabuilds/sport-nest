@@ -63,6 +63,14 @@ app.patch('/facilities/:id', async (req, res) => {
     res.send(result);  
 })
 
+//delete facilities
+app.delete('/facilities/:id', async (req, res) => {
+  const {id} = req.params;
+  const result = await facilitiesCollection.deleteOne({ _id: new ObjectId(id) })
+  res.send(result)
+})
+
+
 //my facilities 
 app.get('/my-facilities/:email', async(req, res) => {
   const {email} = req.params
@@ -71,14 +79,59 @@ app.get('/my-facilities/:email', async(req, res) => {
 });
 
 
-
-
-//booking create
-app.post('/facilities/booking', async(req, res) => {
+// Booking Create (Same Date & Time Slot Protection)
+app.post('/facilities/booking', async (req, res) => {
   const bookingData = req.body;
-  console.log(bookingData)
-  const result = await facilitiesBookingsCollection.insertOne(bookingData)
+  const { facilityId, bookingDate, timeSlot } = bookingData;
+
+  // Ekai facility, same date o same time slot-e aage theke booking ache kina check
+  const existingBooking = await facilitiesBookingsCollection.findOne({
+    facilityId: facilityId,
+    bookingDate: bookingDate,
+    timeSlot: timeSlot,
+  });
+
+  // Slot already booked thakle error message firiye dibe
+  if (existingBooking) {
+    return res.status(400).send({
+      success: false,
+      message: "This slot is already booked for the selected date!",
+    });
+  }
+
+  // Slot khali thakle booking insert hobe
+  const result = await facilitiesBookingsCollection.insertOne(bookingData);
   res.send(result);
+});
+
+
+//specific user booking get
+app.get('/facilities/bookings/:email', async (req, res) => {
+  try {
+    const {email} = req.params;
+    const query = { email: email };  
+    const result = await facilitiesBookingsCollection.find(query).toArray();
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Failed to fetch bookings", error: error.message });
+  }
+});
+
+//booking delete
+app.delete('/bookings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await facilitiesBookingsCollection.deleteOne(query);
+
+    if (result.deletedCount === 1) {
+      res.send({ success: true, message: "Booking cancelled successfully", result });
+    } else {
+      res.status(404).send({ success: false, message: "Booking not found" });
+    }
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Failed to cancel booking", error: error.message });
+  }
 });
 
 
