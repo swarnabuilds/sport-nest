@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { authClient, useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
 import { PlusCircle, MapPin, DollarSign, Users, Trash2, Edit } from "lucide-react";
+import EditFacilityModal from "@/components/EditFacilityModal"; // path thik rakhoon
 
 export default function MyFacilitiesPage() {
   const { data: session, isPending } = useSession();
-  const [facilities, setFacilities] = useState([]);
+  const [facilities, setFacilities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal State
+  const [selectedFacility, setSelectedFacility] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchFacilities() {
@@ -32,6 +36,13 @@ export default function MyFacilitiesPage() {
     fetchFacilities();
   }, [session, isPending]);
 
+  // Update hole UI er state instantly update korar logic
+  const handleUpdateSuccess = (updatedFacility: any) => {
+    setFacilities((prev) =>
+      prev.map((item) => (item._id === updatedFacility._id ? updatedFacility : item))
+    );
+  };
+
   if (isPending || loading) {
     return (
       <div className="flex justify-center items-center h-[70vh]">
@@ -42,13 +53,10 @@ export default function MyFacilitiesPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">My Facilities</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage your listed sports venues and grounds ({facilities.length} found)
-          </p>
+          <p className="text-sm text-slate-500 mt-1">Manage your listed sports venues ({facilities.length} found)</p>
         </div>
         <Link
           href="/dashboard/add-facility"
@@ -59,32 +67,18 @@ export default function MyFacilitiesPage() {
         </Link>
       </div>
 
-      {/* Facilities Grid */}
       {facilities.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <PlusCircle className="w-8 h-8" />
-          </div>
           <h3 className="text-lg font-semibold text-slate-800">No Facilities Found</h3>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-6">
-            You haven't listed any sports facilities yet. Get started by adding your first venue!
-          </p>
-          <Link
-            href="/dashboard/add-facility"
-            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl shadow-sm transition-all"
-          >
-            Add Facility Now
-          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {facilities.map((facility: any) => (
+          {facilities.map((facility) => (
             <div
               key={facility._id}
               className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
-                {/* Facility Image */}
                 <div className="relative h-48 w-full bg-slate-100">
                   <img
                     src={facility.imageUrl || "https://images.unsplash.com/photo-1526232761682-d26e03ac548e"}
@@ -96,19 +90,14 @@ export default function MyFacilitiesPage() {
                   </span>
                 </div>
 
-                {/* Content */}
                 <div className="p-5">
-                  <h3 className="font-bold text-lg text-slate-900 truncate mb-1">
-                    {facility.facilityName}
-                  </h3>
+                  <h3 className="font-bold text-lg text-slate-900 truncate mb-1">{facility.facilityName}</h3>
                   <p className="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
                     {facility.location}
                   </p>
 
-                  <p className="text-sm text-slate-600 line-clamp-2 mb-4">
-                    {facility.description}
-                  </p>
+                  <p className="text-sm text-slate-600 line-clamp-2 mb-4">{facility.description}</p>
 
                   <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-semibold">
                     <span className="flex items-center text-emerald-600">
@@ -126,7 +115,7 @@ export default function MyFacilitiesPage() {
               {/* Action Buttons */}
               <div className="px-5 pb-5 pt-0 flex items-center gap-3">
                 <button
-                  onClick={() => alert(`Edit feature for ${facility.facilityName}`)}
+                  onClick={() => setSelectedFacility(facility)}
                   className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-medium transition-colors"
                 >
                   <Edit className="w-3.5 h-3.5" />
@@ -143,6 +132,15 @@ export default function MyFacilitiesPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Edit Modal Render */}
+      {selectedFacility && (
+        <EditFacilityModal
+          facility={selectedFacility}
+          onClose={() => setSelectedFacility(null)}
+          onUpdateSuccess={handleUpdateSuccess}
+        />
       )}
     </div>
   );
