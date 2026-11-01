@@ -4,16 +4,19 @@ import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
 import { PlusCircle, MapPin, DollarSign, Users, Trash2, Edit } from "lucide-react";
-import EditFacilityModal from "@/components/EditFacilityModal"; // path thik rakhoon
+import EditFacilityModal from "@/components/EditFacilityModal";
+import DeleteConfirmationModal from "@/components/DeleteConfirmationModal"; // Delete modal import
 
 export default function MyFacilitiesPage() {
   const { data: session, isPending } = useSession();
   const [facilities, setFacilities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
-  const [selectedFacility, setSelectedFacility] = useState<any | null>(null);
+  // States for Edit and Delete Modals
+  const [selectedFacilityForEdit, setSelectedFacilityForEdit] = useState<any | null>(null);
+  const [selectedFacilityForDelete, setSelectedFacilityForDelete] = useState<any | null>(null);
 
+  // Fetch facilities
   useEffect(() => {
     async function fetchFacilities() {
       if (session?.user?.email) {
@@ -36,11 +39,16 @@ export default function MyFacilitiesPage() {
     fetchFacilities();
   }, [session, isPending]);
 
-  // Update hole UI er state instantly update korar logic
+  // Update success handler
   const handleUpdateSuccess = (updatedFacility: any) => {
     setFacilities((prev) =>
       prev.map((item) => (item._id === updatedFacility._id ? updatedFacility : item))
     );
+  };
+
+  // Delete success handler (Removes item from state instantly)
+  const handleDeleteSuccess = (deletedId: string) => {
+    setFacilities((prev) => prev.filter((item) => item._id !== deletedId));
   };
 
   if (isPending || loading) {
@@ -115,14 +123,16 @@ export default function MyFacilitiesPage() {
               {/* Action Buttons */}
               <div className="px-5 pb-5 pt-0 flex items-center gap-3">
                 <button
-                  onClick={() => setSelectedFacility(facility)}
+                  onClick={() => setSelectedFacilityForEdit(facility)}
                   className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-medium transition-colors"
                 >
                   <Edit className="w-3.5 h-3.5" />
                   Edit
                 </button>
+
+                {/* Delete Button Triggers Delete Modal */}
                 <button
-                  onClick={() => alert(`Delete feature for ${facility._id}`)}
+                  onClick={() => setSelectedFacilityForDelete(facility)}
                   className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-xl text-xs font-medium transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -134,12 +144,21 @@ export default function MyFacilitiesPage() {
         </div>
       )}
 
-      {/* Edit Modal Render */}
-      {selectedFacility && (
+      {/* Edit Modal */}
+      {selectedFacilityForEdit && (
         <EditFacilityModal
-          facility={selectedFacility}
-          onClose={() => setSelectedFacility(null)}
+          facility={selectedFacilityForEdit}
+          onClose={() => setSelectedFacilityForEdit(null)}
           onUpdateSuccess={handleUpdateSuccess}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {selectedFacilityForDelete && (
+        <DeleteConfirmationModal
+          facility={selectedFacilityForDelete}
+          onClose={() => setSelectedFacilityForDelete(null)}
+          onDeleteSuccess={handleDeleteSuccess}
         />
       )}
     </div>
