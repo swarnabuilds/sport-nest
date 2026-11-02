@@ -44,7 +44,7 @@ const verifyToken = async(req, res, next) => {
   }
 
   const JWKS = createRemoteJWKSet(
-      new URL('http://localhost:3000/api/auth/jwks')
+      new URL(`${process.env.CLIENT_URI}/api/auth/jwks`)
   )
 
   try{
@@ -112,7 +112,7 @@ app.get('/my-facilities/:email',
   if (email !== req.user?.email) {
     return res.status(403).send({ msg: "Forbidden access" });
   }
-  
+
    const result = await facilitiesCollection.find({ creatorEmail: email }).toArray();
   res.send(result);
 });
