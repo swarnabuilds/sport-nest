@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/lib/auth-client"; // Better Auth Hook
+import { getTokenFromServer } from "@/lib/getTokenFromServer";
 
 interface BookingFormProps {
   facility: {
@@ -27,41 +28,52 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    
+
     // টাইপ এরর সমাধানের জন্য Record<string, any> ব্যবহার করা হয়েছে
-    const bookingData: Record<string, any> = Object.fromEntries(formData.entries());
+    const bookingData: Record<string, any> = Object.fromEntries(
+      formData.entries(),
+    );
 
     // প্লেয়ার্স সংখ্যাকে নাম্বারে রূপান্তর এবং মোট মূল্য হিসাব করা
     bookingData.playersCount = Number(bookingData.playersCount);
     bookingData.totalPrice = facilityPrice * duration;
-    
+
     // ইউজারের ইমেজ যদি থাকে তা পাঠানো
     if (user?.image) {
       bookingData.userImage = user.image;
     }
 
+    //access token fom server
+    const token = await getTokenFromServer();
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/facilities/booking`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/facilities/booking`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bookingData),
         },
-        body: JSON.stringify(bookingData),
-      });
+      );
 
       const data = await res.json();
 
       if (res.ok) {
         toast.add({
           title: "Booking Confirmed! 🎉",
-          description: `Your slot for ${facility?.facilityName || 'the facility'} has been successfully booked.`,
+          description: `Your slot for ${facility?.facilityName || "the facility"} has been successfully booked.`,
         });
         form.reset();
         setDuration(1);
       } else {
         toast.add({
           title: "Booking Failed",
-          description: data?.message || "Could not confirm your booking. Please try again.",
+          description:
+            data?.message ||
+            "Could not confirm your booking. Please try again.",
         });
       }
     } catch (error) {
@@ -70,14 +82,16 @@ export default function BookingForm({ facility }: BookingFormProps) {
         title: "Error",
         description: "Something went wrong. Please check your connection.",
       });
-    }  
+    }
   };
 
   return (
     <div className="lg:col-span-5 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-900">Book This Facility</h2>
-        <p className="text-xs text-slate-500 mt-0.5">Fill in your details to reserve this spot</p>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Fill in your details to reserve this spot
+        </p>
       </div>
 
       {/* লগ ইন করা ইউজারের Profile Preview & Avatar */}
@@ -85,13 +99,19 @@ export default function BookingForm({ facility }: BookingFormProps) {
         <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
           <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-emerald-200 bg-emerald-100 justify-center items-center font-bold text-emerald-700">
             {user.image ? (
-              <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
+              <img
+                src={user.image}
+                alt={user.name || "User"}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <span>{user.name?.charAt(0)?.toUpperCase() || "U"}</span>
             )}
           </div>
           <div className="text-xs">
-            <p className="font-semibold text-slate-800">{user.name || "Logged in User"}</p>
+            <p className="font-semibold text-slate-800">
+              {user.name || "Logged in User"}
+            </p>
             <p className="text-slate-500">{user.email}</p>
           </div>
         </div>
@@ -103,7 +123,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
         {/* Facility Name (Readonly) */}
         <div className="space-y-1.5">
-          <label htmlFor="facilityName" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="facilityName"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Facility
           </label>
           <input
@@ -118,7 +141,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
         {/* Full Name */}
         <div className="space-y-1.5">
-          <label htmlFor="fullName" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="fullName"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Full Name
           </label>
           <input
@@ -137,7 +163,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
         {/* Email */}
         <div className="space-y-1.5">
-          <label htmlFor="email" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="email"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Email Address
           </label>
           <input
@@ -156,7 +185,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
         {/* Phone */}
         <div className="space-y-1.5">
-          <label htmlFor="phone" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="phone"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Phone Number
           </label>
           <input
@@ -171,7 +203,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
         {/* Number of Players Field */}
         <div className="space-y-1.5">
-          <label htmlFor="playersCount" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="playersCount"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Number of Players
           </label>
           <input
@@ -189,7 +224,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
         {/* Booking Date & Start Time */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label htmlFor="bookingDate" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            <label
+              htmlFor="bookingDate"
+              className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+            >
               Booking Date
             </label>
             <input
@@ -202,7 +240,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="startTime" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            <label
+              htmlFor="startTime"
+              className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+            >
               Start Time
             </label>
             <input
@@ -217,7 +258,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
         {/* Time Slot */}
         <div className="space-y-1.5">
-          <label htmlFor="timeSlot" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="timeSlot"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Time Slot
           </label>
           <select
@@ -235,7 +279,10 @@ export default function BookingForm({ facility }: BookingFormProps) {
 
         {/* Duration */}
         <div className="space-y-1.5">
-          <label htmlFor="duration" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="duration"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Duration (Hours)
           </label>
           <input
@@ -253,12 +300,16 @@ export default function BookingForm({ facility }: BookingFormProps) {
         {/* Price Calculation Box */}
         <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-100 space-y-1 text-sm">
           <div className="flex justify-between text-slate-600 text-xs">
-            <span>${facilityPrice}/hr × {duration} hr</span>
+            <span>
+              ${facilityPrice}/hr × {duration} hr
+            </span>
             <span>${facilityPrice * duration}</span>
           </div>
           <div className="flex justify-between font-bold text-slate-900 text-base pt-1 border-t border-emerald-200/60">
             <span>Total Price</span>
-            <span className="text-emerald-700">${facilityPrice * duration}</span>
+            <span className="text-emerald-700">
+              ${facilityPrice * duration}
+            </span>
           </div>
         </div>
 

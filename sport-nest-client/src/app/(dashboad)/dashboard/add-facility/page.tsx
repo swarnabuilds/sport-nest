@@ -7,20 +7,20 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/lib/auth-client";
 import { Spinner } from "@/components/ui/spinner";
+import { getTokenFromServer } from "@/lib/getTokenFromServer";
 
 export default function AddFacilityPage() {
+  const { data: session, isPending } = useSession();
+  if (isPending)
+    return (
+      <div className="flex justify-center items-center h-[85vh]">
+        <Spinner />
+      </div>
+    );
+  const user = session?.user;
+  console.log(user);
 
-    const { data: session, isPending} = useSession();
-    if(isPending) return <div className="flex justify-center items-center h-[85vh]">
-      <Spinner />
-    </div>
-    const user = session?.user
-    console.log(user)
-
-
-  
-
-  const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     // 1. Current Target (Form element) থেকে FormData তৈরি
@@ -34,40 +34,49 @@ export default function AddFacilityPage() {
       ...facilityData,
       price: Number(facilityData.price),
       capacity: Number(facilityData.capacity),
-      creatorEmail: session?.user?.email,  
+      creatorEmail: session?.user?.email,
     };
 
+    //aaccess api server token fo secure
+    const token = await getTokenFromServer();
+    if (!token) {
+      console.error("No authorization token found!");
+      // Toast notification or handle unauthenticated state
+      return;
+    }
 
     //api call
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/facilities`,{
-      method:"POST",
-      headers:{
-        'Content-Type': "application/json"
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/facilities`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        authorization: `Bearer ${token}`,
       },
-      body:JSON.stringify(finalData)
-    })
+      body: JSON.stringify(finalData),
+    });
     const data = await res.json();
 
-   if (res.ok) {
-        // Success Toast
-        toast.add({
-          title: "Facility Added Successfully!",
-          description: "Your sports venue has been listed and is now available for booking.",
-          type: "success",  
-        });
-        
-        form.reset();
-      } else {
-        // Error Toast
-        toast.add({
-          title: "Failed to Add Facility",
-          description: data.message || "Something went wrong. Please try again.",
-          type: "error",
-        });
-      }
+    if (res.ok) {
+      // Success Toast
+      toast.add({
+        title: "Facility Added Successfully!",
+        description:
+          "Your sports venue has been listed and is now available for booking.",
+        type: "success",
+      });
+
+      form.reset();
+    } else {
+      // Error Toast
+      toast.add({
+        title: "Failed to Add Facility",
+        description: data.message || "Something went wrong. Please try again.",
+        type: "error",
+      });
+    }
 
     console.log("Server Response:", data);
-    console.log(res)
+    console.log(res);
   };
 
   return (
@@ -83,11 +92,13 @@ export default function AddFacilityPage() {
       {/* Form Card */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-6">
-          
           {/* Row 1: Facility Name & Sport Type */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="facilityName" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              <Label
+                htmlFor="facilityName"
+                className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+              >
                 Facility Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -99,7 +110,10 @@ export default function AddFacilityPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sportType" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              <Label
+                htmlFor="sportType"
+                className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+              >
                 Sport Type <span className="text-red-500">*</span>
               </Label>
               <select
@@ -120,7 +134,10 @@ export default function AddFacilityPage() {
           {/* Row 2: Image URL & Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="imageUrl" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              <Label
+                htmlFor="imageUrl"
+                className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+              >
                 Image URL <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -132,7 +149,10 @@ export default function AddFacilityPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              <Label
+                htmlFor="location"
+                className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+              >
                 Location <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -147,7 +167,10 @@ export default function AddFacilityPage() {
           {/* Row 3: Price Per Hour & Capacity */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="price" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              <Label
+                htmlFor="price"
+                className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+              >
                 Price Per Hour ($) <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -160,7 +183,10 @@ export default function AddFacilityPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="capacity" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              <Label
+                htmlFor="capacity"
+                className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+              >
                 Capacity (Players) <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -175,7 +201,10 @@ export default function AddFacilityPage() {
 
           {/* Row 5: Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            <Label
+              htmlFor="description"
+              className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+            >
               Description <span className="text-red-500">*</span>
             </Label>
             <Textarea
@@ -195,7 +224,6 @@ export default function AddFacilityPage() {
               Add Facility
             </Button>
           </div>
-
         </form>
       </div>
     </div>

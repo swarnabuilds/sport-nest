@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
-import { Calendar, Clock, MapPin, DollarSign, Users, Trash2, BookmarkCheck } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  DollarSign,
+  Users,
+  Trash2,
+  BookmarkCheck,
+} from "lucide-react";
 import { toast } from "@/components/ui/toast";
+import { getTokenFromServer } from "@/lib/getTokenFromServer";
 
 export default function MyBookingsPage() {
   const { data: session, isPending } = useSession();
@@ -13,19 +22,34 @@ export default function MyBookingsPage() {
   // ইউজারের ইমেইল দিয়ে বুকিং ডেটা ফেচ করা
   useEffect(() => {
     async function fetchMyBookings() {
-      if (session?.user?.email) {
-        try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/facilities/bookings/${session.user.email}`);
-          if (res.ok) {
-            const data = await res.json();
-            setBookings(data);
-          }
-        } catch (err) {
-          console.error("Failed to fetch bookings:", err);
-        } finally {
-          setLoading(false);
+      if (isPending) return;
+
+      // access api server token for secure
+      const token = await getTokenFromServer();
+
+      if (!token || !session?.user?.email) {
+        console.error("No authorization token or user found!");
+        setLoading(false); // অত্যন্ত জরুরি: লোডিং বন্ধ করতেই হবে যাতে পেজ আটকে না থাকে
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/facilities/bookings/${session.user.email}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setBookings(data);
         }
-      } else if (!isPending) {
+      } catch (err) {
+        console.error("Failed to fetch bookings:", err);
+      } finally {
         setLoading(false);
       }
     }
@@ -36,17 +60,26 @@ export default function MyBookingsPage() {
   // বুকিং ক্যানসেল করার হ্যান্ডলার (Toast সহ)
   const handleCancelBooking = async (id: string, facilityName: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/bookings/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/bookings/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       const data = await res.json();
 
       if (res.ok) {
         setBookings((prev) => prev.filter((item) => item._id !== id));
-        toast.add({ title: `Booking for "${facilityName || 'Facility'}" cancelled successfully!`, type: "success" });
+        toast.add({
+          title: `Booking for "${facilityName || "Facility"}" cancelled successfully!`,
+          type: "success",
+        });
       } else {
-        toast.add({ title: data?.message || "Failed to cancel booking", type: "error" });
+        toast.add({
+          title: data?.message || "Failed to cancel booking",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Cancel error:", error);
@@ -68,7 +101,8 @@ export default function MyBookingsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">My Bookings</h1>
         <p className="text-sm text-slate-500 mt-1">
-          View and manage your reserved sports facilities ({bookings.length} bookings found)
+          View and manage your reserved sports facilities ({bookings.length}{" "}
+          bookings found)
         </p>
       </div>
 
@@ -78,8 +112,12 @@ export default function MyBookingsPage() {
           <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
             <BookmarkCheck className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-800">No Bookings Found</h3>
-          <p className="text-sm text-slate-500 mt-1">You haven't reserved any sports venues yet.</p>
+          <h3 className="text-lg font-semibold text-slate-800">
+            No Bookings Found
+          </h3>
+          <p className="text-sm text-slate-500 mt-1">
+            You haven't reserved any sports venues yet.
+          </p>
         </div>
       ) : (
         /* বুকিং কার্ড গ্রিড */
@@ -106,17 +144,26 @@ export default function MyBookingsPage() {
                 <div className="p-5 space-y-3 text-sm text-slate-600">
                   <p className="flex items-center gap-2 text-xs">
                     <Calendar className="w-4 h-4 text-emerald-600" />
-                    <span className="font-medium text-slate-700">Date:</span> {booking.bookingDate}
+                    <span className="font-medium text-slate-700">
+                      Date:
+                    </span>{" "}
+                    {booking.bookingDate}
                   </p>
 
                   <p className="flex items-center gap-2 text-xs">
                     <Clock className="w-4 h-4 text-emerald-600" />
-                    <span className="font-medium text-slate-700">Time Slot:</span> {booking.timeSlot} ({booking.duration} hr)
+                    <span className="font-medium text-slate-700">
+                      Time Slot:
+                    </span>{" "}
+                    {booking.timeSlot} ({booking.duration} hr)
                   </p>
 
                   <p className="flex items-center gap-2 text-xs">
                     <Users className="w-4 h-4 text-emerald-600" />
-                    <span className="font-medium text-slate-700">Players:</span> {booking.playersCount || 1} Persons
+                    <span className="font-medium text-slate-700">
+                      Players:
+                    </span>{" "}
+                    {booking.playersCount || 1} Persons
                   </p>
 
                   <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-4 text-sm font-semibold">
@@ -131,7 +178,9 @@ export default function MyBookingsPage() {
               {/* অ্যাকশন বাটন (Cancel Booking) */}
               <div className="px-5 pb-5 pt-0">
                 <button
-                  onClick={() => handleCancelBooking(booking._id, booking.facilityName)}
+                  onClick={() =>
+                    handleCancelBooking(booking._id, booking.facilityName)
+                  }
                   className="w-full flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-xl text-xs font-medium transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />

@@ -3,9 +3,17 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
-import { PlusCircle, MapPin, DollarSign, Users, Trash2, Edit } from "lucide-react";
+import {
+  PlusCircle,
+  MapPin,
+  DollarSign,
+  Users,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import EditFacilityModal from "@/components/EditFacilityModal";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal"; // Delete modal import
+import { getTokenFromServer } from "@/lib/getTokenFromServer";
 
 export default function MyFacilitiesPage() {
   const { data: session, isPending } = useSession();
@@ -13,15 +21,36 @@ export default function MyFacilitiesPage() {
   const [loading, setLoading] = useState(true);
 
   // States for Edit and Delete Modals
-  const [selectedFacilityForEdit, setSelectedFacilityForEdit] = useState<any | null>(null);
-  const [selectedFacilityForDelete, setSelectedFacilityForDelete] = useState<any | null>(null);
+  const [selectedFacilityForEdit, setSelectedFacilityForEdit] = useState<
+    any | null
+  >(null);
+  const [selectedFacilityForDelete, setSelectedFacilityForDelete] = useState<
+    any | null
+  >(null);
 
   // Fetch facilities
   useEffect(() => {
     async function fetchFacilities() {
-      if (session?.user?.email) {
+      if (isPending) return;
+      //aaccess api server token fo secure
+      const token = await getTokenFromServer();
+      
+      if (!session?.user?.email || !token) {
+        console.error("No authorization token or user found!");
+        setLoading(false);  
+        return;
+      }
+
+       
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/my-facilities/${session.user.email}`);
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/my-facilities/${session.user.email}`,
+            {
+              headers: {
+                authorization: `Bearer ${token}`,
+              },
+            },
+          );
           if (res.ok) {
             const data = await res.json();
             setFacilities(data);
@@ -31,9 +60,7 @@ export default function MyFacilitiesPage() {
         } finally {
           setLoading(false);
         }
-      } else if (!isPending) {
-        setLoading(false);
-      }
+       
     }
 
     fetchFacilities();
@@ -42,7 +69,9 @@ export default function MyFacilitiesPage() {
   // Update success handler
   const handleUpdateSuccess = (updatedFacility: any) => {
     setFacilities((prev) =>
-      prev.map((item) => (item._id === updatedFacility._id ? updatedFacility : item))
+      prev.map((item) =>
+        item._id === updatedFacility._id ? updatedFacility : item,
+      ),
     );
   };
 
@@ -64,7 +93,9 @@ export default function MyFacilitiesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">My Facilities</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage your listed sports venues ({facilities.length} found)</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Manage your listed sports venues ({facilities.length} found)
+          </p>
         </div>
         <Link
           href="/dashboard/add-facility"
@@ -77,7 +108,9 @@ export default function MyFacilitiesPage() {
 
       {facilities.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-800">No Facilities Found</h3>
+          <h3 className="text-lg font-semibold text-slate-800">
+            No Facilities Found
+          </h3>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -89,7 +122,10 @@ export default function MyFacilitiesPage() {
               <div>
                 <div className="relative h-48 w-full bg-slate-100">
                   <img
-                    src={facility.imageUrl || "https://images.unsplash.com/photo-1526232761682-d26e03ac548e"}
+                    src={
+                      facility.imageUrl ||
+                      "https://images.unsplash.com/photo-1526232761682-d26e03ac548e"
+                    }
                     alt={facility.facilityName}
                     className="w-full h-full object-cover"
                   />
@@ -99,13 +135,17 @@ export default function MyFacilitiesPage() {
                 </div>
 
                 <div className="p-5">
-                  <h3 className="font-bold text-lg text-slate-900 truncate mb-1">{facility.facilityName}</h3>
+                  <h3 className="font-bold text-lg text-slate-900 truncate mb-1">
+                    {facility.facilityName}
+                  </h3>
                   <p className="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
                     {facility.location}
                   </p>
 
-                  <p className="text-sm text-slate-600 line-clamp-2 mb-4">{facility.description}</p>
+                  <p className="text-sm text-slate-600 line-clamp-2 mb-4">
+                    {facility.description}
+                  </p>
 
                   <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-semibold">
                     <span className="flex items-center text-emerald-600">
