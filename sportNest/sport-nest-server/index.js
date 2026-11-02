@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { MongoClient, ObjectId } from 'mongodb';
 import "dotenv/config";
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 
 const app = express();
@@ -28,6 +29,35 @@ const facilitiesCollection = db.collection("facilities");
 const facilitiesBookingsCollection = db.collection("facilitiyBookings");
 
 
+//middleware
+const verifyToken = async(req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if(!authHeader){
+    return res.status(401).send({ msg: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  console.log(token);
+
+  if(!token){
+    return res.status(401).send({ msg: "Unathorized!" })
+  }
+
+  const JWKS = createRemoteJWKSet(
+      new URL('http://localhost:3000/api/auth/jwks')
+  )
+
+  try{
+  const { payload } = await jwtVerify(token, JWKS);
+  req.user = payload;
+  console.log(payload)
+    next();
+  } catch {
+    return res.status(500).send({ msg: "server error" })
+  }
+}
+
+
 
 
 //facilities
@@ -37,7 +67,9 @@ app.get('/facilities', async(req, res) => {
 });
 
 //create facility
-app.post('/facilities', async(req, res) => {
+app.post('/facilities',
+  verifyToken,
+  async(req, res) => {
   const facilityData = req.body;
   console.log(facilityData)
   const result = await facilitiesCollection.insertOne(facilityData)
@@ -72,15 +104,24 @@ app.delete('/facilities/:id', async (req, res) => {
 
 
 //my facilities 
-app.get('/my-facilities/:email', async(req, res) => {
-  const {email} = req.params
+app.get('/my-facilities/:email', 
+  verifyToken,
+  async(req, res) => {
+  const {email} = req.params;
+
+  if (email !== req.user?.email) {
+    return res.status(403).send({ msg: "Forbidden access" });
+  }
+  
    const result = await facilitiesCollection.find({ creatorEmail: email }).toArray();
   res.send(result);
 });
 
 
 // Booking Create (Same Date & Time Slot Protection)
-app.post('/facilities/booking', async (req, res) => {
+app.post('/facilities/booking',
+  verifyToken,
+  async (req, res) => {
   const bookingData = req.body;
   const { facilityId, bookingDate, timeSlot } = bookingData;
 
@@ -106,7 +147,9 @@ app.post('/facilities/booking', async (req, res) => {
 
 
 //specific user booking get
-app.get('/facilities/bookings/:email', async (req, res) => {
+app.get('/facilities/bookings/:email', 
+  verifyToken,
+  async (req, res) => {
   try {
     const {email} = req.params;
     const query = { email: email };  
